@@ -213,40 +213,39 @@ export default async (request) => {
     iframePath: '/index.html?session=…',
   });
 
-  // Diagnostic profond: renvoyer d'abord un Slate ULTRA SIMPLE (texte seul).
-  // Si cela ne s'affiche pas, le problème vient du contrat Bettermode <-> endpoint,
-  // pas de l'iframe ni de la logique d'auth.
-  const debugMarkdown = [
-    '**Annuaire debug**',
-    '',
-    '- Endpoint Netlify atteint',
-    '- Signature vérifiée',
-    `- dynamicBlockKey: \`${dynamicBlockKey || 'n/a'}\``,
-    `- actorId: \`${effectiveActorId}\``,
-    '',
-    `[Ouvrir l'annuaire dans un nouvel onglet](${iframeUrl})`,
-  ].join('\n');
-
-  const slate = {
-    rootBlock: 'root',
-    blocks: [
-      {
-        id: 'root',
-        name: 'Container',
-        props: { spacing: 'md' },
-        children: ['intro'],
-      },
-      {
-        id: 'intro',
-        name: 'text',
-        props: {
-          format: 'markdown',
-          value: debugMarkdown,
+  // Diagnostic profond v2:
+  // Revenir au format INTERACTION documenté, mais en version ULTRA MINIMALE:
+  // - une seule interaction SHOW
+  // - un slate avec un seul bloc Text
+  // - pas de toast, pas d'iframe
+  const debugText = `Annuaire debug OK — key=${dynamicBlockKey || 'n/a'} actor=${effectiveActorId}`;
+  const interactionResponse = {
+    type: 'INTERACTION',
+    status: 'Succeeded',
+    data: {
+      appId,
+      interactionId,
+      interactions: [
+        {
+          type: 'SHOW',
+          id: 'dynamic-block',
+          slate: {
+            rootBlock: 'root',
+            blocks: [
+              {
+                id: 'root',
+                name: 'Text',
+                props: {
+                  value: debugText,
+                },
+                children: [],
+              },
+            ],
+          },
         },
-        children: [],
-      },
-    ],
+      ],
+    },
   };
 
-  return slateResponse(200, slate);
+  return json(200, interactionResponse);
 };
