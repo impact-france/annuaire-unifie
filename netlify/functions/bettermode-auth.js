@@ -213,10 +213,20 @@ export default async (request) => {
     iframePath: '/index.html?session=…',
   });
 
-  // IMPORTANT (Bettermode Dynamic Block):
-  // Pour le rendu initial d’un Dynamic Block, Bettermode attend généralement un Slate "brut"
-  // (rootBlock + blocks) plutôt qu’un wrapper INTERACTION (qui sert aux interactions clic/shortcut).
-  // On renvoie donc directement le modèle Slate.
+  // Diagnostic profond: renvoyer d'abord un Slate ULTRA SIMPLE (texte seul).
+  // Si cela ne s'affiche pas, le problème vient du contrat Bettermode <-> endpoint,
+  // pas de l'iframe ni de la logique d'auth.
+  const debugMarkdown = [
+    '**Annuaire debug**',
+    '',
+    '- Endpoint Netlify atteint',
+    '- Signature vérifiée',
+    `- dynamicBlockKey: \`${dynamicBlockKey || 'n/a'}\``,
+    `- actorId: \`${effectiveActorId}\``,
+    '',
+    `[Ouvrir l'annuaire dans un nouvel onglet](${iframeUrl})`,
+  ].join('\n');
+
   const slate = {
     rootBlock: 'root',
     blocks: [
@@ -224,15 +234,14 @@ export default async (request) => {
         id: 'root',
         name: 'Container',
         props: { spacing: 'md' },
-        children: ['frame'],
+        children: ['intro'],
       },
       {
-        id: 'frame',
-        name: 'Iframe',
+        id: 'intro',
+        name: 'text',
         props: {
-          src: iframeUrl,
-          height: 900,
-          title: 'Annuaire',
+          format: 'markdown',
+          value: debugMarkdown,
         },
         children: [],
       },
