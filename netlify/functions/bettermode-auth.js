@@ -213,39 +213,24 @@ export default async (request) => {
     iframePath: '/index.html?session=…',
   });
 
-  // Diagnostic profond v2:
-  // Revenir au format INTERACTION documenté, mais en version ULTRA MINIMALE:
-  // - une seule interaction SHOW
-  // - un slate avec un seul bloc Text
-  // - pas de toast, pas d'iframe
-  const debugText = `Annuaire debug OK — key=${dynamicBlockKey || 'n/a'} actor=${effectiveActorId}`;
-  const interactionResponse = {
-    type: 'INTERACTION',
-    status: 'Succeeded',
-    data: {
-      appId,
-      interactionId,
-      interactions: [
-        {
-          type: 'SHOW',
-          id: 'dynamic-block',
-          slate: {
-            rootBlock: 'root',
-            blocks: [
-              {
-                id: 'root',
-                name: 'Text',
-                props: {
-                  value: debugText,
-                },
-                children: [],
-              },
-            ],
-          },
+  // Diagnostic profond v3:
+  // Slate "brut" strictement conforme à Slate Kit:
+  // - rootBlock + blocks
+  // - composant Text (casse exacte) + prop value
+  // Référence: https://developers.bettermode.com/docs/guide/apps/interactivity/slate-kit/
+  const debugText = `Annuaire debug OK | key=${dynamicBlockKey || 'n/a'} | actor=${effectiveActorId}`;
+  const slate = {
+    rootBlock: 'root',
+    blocks: [
+      {
+        id: 'root',
+        name: 'Text',
+        props: {
+          value: debugText,
         },
-      ],
-    },
+      },
+    ],
   };
 
-  return json(200, interactionResponse);
+  return slateResponse(200, slate);
 };
