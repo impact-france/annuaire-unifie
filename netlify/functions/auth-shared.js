@@ -28,12 +28,23 @@ function isParentReferrerAllowed(parentHeader) {
 /**
  * @returns {null|Response} null si OK, sinon Response d'erreur
  */
+function getMemberIdFromSearch(url) {
+  return (
+    (url.searchParams.get('memberId') ||
+      url.searchParams.get('member_id') ||
+      url.searchParams.get('member') ||
+      '') +
+    ''
+  ).trim();
+}
+
 export function verifyAccessOrResponse(request) {
   const url = new URL(request.url);
   const token = getBearerToken(request) || (url.searchParams.get('session') || '').trim();
-  const memberId = (url.searchParams.get('memberId') || '').trim();
+  const memberId = getMemberIdFromSearch(url);
   const parentRef =
     request.headers.get('x-embed-parent') || request.headers.get('X-Embed-Parent') || '';
+  const relaxParent = Netlify.env.get('BETTERMODE_EMBED_RELAX_PARENT') === 'true';
 
   const sessionSecret = Netlify.env.get('DIRECTORY_SESSION_SECRET');
 
@@ -52,12 +63,23 @@ export function verifyAccessOrResponse(request) {
 
   // Mode embed B : memberId + origine parent (iframe Bettermode)
   if (memberId) {
-    if (!isParentReferrerAllowed(parentRef)) {
+    const prefixes = parseAllowedParentPrefixes();
+    if (prefixes.length === 0 && !(relaxParent && !parentRef)) {
       return json403(
-        "Accès refusé (embed). Ouvre l’annuaire depuis Bettermode (iframe) ou configure BETTERMODE_EMBED_PARENT_ORIGINS.",
+        'Configure BETTERMODE_EMBED_PARENT_ORIGINS sur Netlify (domaines autorisés pour le bloc iframe).',
       );
     }
-    return null;
+    if (isParentReferrerAllowed(parentRef)) {
+      return null;
+    }
+    // Referrer parent parfois vide (Referrer-Policy). Option documentée (moins strict).
+    if (relaxParent && !parentRef) {
+      console.warn('[auth-shared] BETTERMODE_EMBED_RELAX_PARENT: accès memberId sans X-Embed-Parent');
+      return null;
+    }
+    return json403(
+      "Accès refusé (embed). Vérifie BETTERMODE_EMBED_PARENT_ORIGINS, ou active BETTERMODE_EMBED_RELAX_PARENT si le referrer parent est vide.",
+    );
   }
 
   if (!token && !memberId) {

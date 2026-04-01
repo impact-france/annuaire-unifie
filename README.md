@@ -28,6 +28,7 @@ Ce projet sert un annuaire via une iframe dans Bettermode, avec un accès **prot
   - (Optionnel) `BETTERMODE_CLIENT_SECRET` : utilisé en fallback si `BETTERMODE_SIGNING_SECRET` n’est pas défini.
 - `DIRECTORY_SESSION_SECRET` : secret pour signer/vérifier les JWT `session` éphémères (mode A).
 - `BETTERMODE_EMBED_PARENT_ORIGINS` : liste séparée par des virgules d’**URL préfixes** autorisés pour le header `X-Embed-Parent` (mode B), par ex. `https://adherent.impactfrance.eco,https://ta-communaute.bettermode.com`
+- `BETTERMODE_EMBED_RELAX_PARENT` : optionnel, mettre `true` si Bettermode envoie un `referrer` parent vide (Referrer-Policy). **Moins strict** : n’utilise que si nécessaire.
 - `HUBSPOT_ACCESS_TOKEN` : token HubSpot.
 - `HUBSPOT_COMPANY_LIST_ID` : ID de liste HubSpot (optionnel, défaut `"412"` dans le code).
 

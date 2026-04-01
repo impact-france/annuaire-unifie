@@ -825,7 +825,12 @@
 
         function getMemberIdFromUrl() {
             const params = new URLSearchParams(window.location.search);
-            return (params.get('memberId') || '').trim();
+            return (
+                params.get('memberId') ||
+                params.get('member_id') ||
+                params.get('member') ||
+                ''
+            ).trim();
         }
 
         function withAuthQuery(url) {
@@ -846,14 +851,21 @@
             return fetch(withAuthQuery(url), { ...options, headers });
         }
 
-        function showAccessDenied() {
-            const hint = memberIdFromUrl
-                ? 'Ouvre cette page depuis Bettermode (iframe). Si le problème persiste, vérifie la variable Netlify BETTERMODE_EMBED_PARENT_ORIGINS.'
-                : 'Utilise un lien avec <code>?session=…</code> (Dynamic Block) ou <code>?memberId=…</code> depuis Bettermode (iframe).';
+        function showAccessDenied(reason) {
+            const diag = `session=${sessionToken ? 'oui' : 'non'}, memberId=${memberIdFromUrl ? 'oui' : 'non'}, referrer parent=${(document.referrer || '(vide)').slice(0, 80)}`;
+            let hint = '';
+            if (reason === 'embed_api') {
+                hint = 'Le serveur a refusé l’accès (403). Vérifie sur Netlify : <code>BETTERMODE_EMBED_PARENT_ORIGINS</code> (domaine Bettermode exact), ou temporairement <code>BETTERMODE_EMBED_RELAX_PARENT=true</code> si <code>referrer</code> parent est vide.';
+            } else if (!sessionToken && !memberIdFromUrl) {
+                hint = 'Aucun <code>?session=…</code> ni <code>?memberId=…</code> dans l’URL. En iframe Liquid, utilise par ex. <code>index.html?memberId={{ member.id }}</code>.';
+            } else {
+                hint = 'Ouvre cette page depuis Bettermode (iframe) ou vérifie la configuration Netlify ci-dessus.';
+            }
             directoryContainer.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #e53e3e;">
                     <h3 style="margin-bottom: 0.5rem;">Accès refusé</h3>
                     <p>${hint}</p>
+                    <p style="margin-top:1rem;font-size:0.85rem;color:#718096;">Diagnostic : ${diag}</p>
                 </div>
             `;
             pagination.style.display = 'none';
@@ -1182,7 +1194,7 @@
                 const response = await authFetch(`/.netlify/functions/get-companies?${params}`);
                 if (!response.ok) {
                     if (response.status === 403) {
-                        showAccessDenied();
+                        showAccessDenied(memberIdFromUrl && !sessionToken ? 'embed_api' : undefined);
                         return;
                     }
                     throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
@@ -1314,7 +1326,7 @@
                 memberIdFromUrl = getMemberIdFromUrl();
                 if (!sessionToken && !memberIdFromUrl) {
                     loadingIndicator.style.display = 'none';
-                    showAccessDenied();
+                    showAccessDenied('missing');
                     return;
                 }
 
@@ -1334,7 +1346,7 @@
                 } else {
                     if (response.status === 403) {
                         loadingIndicator.style.display = 'none';
-                        showAccessDenied();
+                        showAccessDenied(memberIdFromUrl && !sessionToken ? 'embed_api' : undefined);
                         return;
                     }
                     console.warn('Impossible de charger toutes les entreprises pour les filtres, utilisation de la pagination uniquement');
