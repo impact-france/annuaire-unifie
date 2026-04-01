@@ -1,35 +1,8 @@
 import { Client } from '@hubspot/api-client';
-import jwt from 'jsonwebtoken';
+import { verifyAccessOrResponse } from './auth-shared.js';
 
 let cachedByCompanyId = new Map();
 const CACHE_DURATION_MINUTES = 30;
-
-function getBearerToken(request) {
-  const auth = request.headers.get('authorization') || request.headers.get('Authorization') || '';
-  const match = auth.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || '';
-}
-
-function verifySessionOrThrow(request) {
-  const sessionSecret = Netlify.env.get('DIRECTORY_SESSION_SECRET');
-  if (!sessionSecret) throw new Error("Variable d'environnement DIRECTORY_SESSION_SECRET manquante.");
-
-  const url = new URL(request.url);
-  const token = getBearerToken(request) || (url.searchParams.get('session') || '').trim();
-  if (!token) {
-    const err = new Error('Accès refusé');
-    err.statusCode = 403;
-    throw err;
-  }
-
-  try {
-    return jwt.verify(token, sessionSecret, { algorithms: ['HS256'] });
-  } catch {
-    const err = new Error('Accès refusé');
-    err.statusCode = 403;
-    throw err;
-  }
-}
 
 function getFromCache(companyId) {
   const entry = cachedByCompanyId.get(companyId);
@@ -53,14 +26,8 @@ function setCache(companyId, contacts) {
 }
 
 export default async (request) => {
-  try {
-    verifySessionOrThrow(request);
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message || 'Accès refusé' }), {
-      status: e.statusCode || 403,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    });
-  }
+  const authError = verifyAccessOrResponse(request);
+  if (authError) return authError;
 
   const url = new URL(request.url);
   const companyId = (url.searchParams.get('companyId') || '').trim();

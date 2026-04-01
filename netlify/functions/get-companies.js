@@ -1,6 +1,6 @@
 // Importe le Client depuis la librairie HubSpot en utilisant la syntaxe ES Modules
 import { Client } from '@hubspot/api-client';
-import jwt from 'jsonwebtoken';
+import { verifyAccessOrResponse } from './auth-shared.js';
 
 // Le système de cache pour les entreprises
 let cachedCompanies = null;
@@ -8,44 +8,9 @@ let cacheTimestamp = 0;
 const CACHE_DURATION_MINUTES = 30; // Cache réduit à 30 minutes pour des données plus fraîches
 const COMPANIES_PER_PAGE = 20; // Pagination côté serveur
 
-function getBearerToken(request) {
-    const auth = request.headers.get('authorization') || request.headers.get('Authorization') || '';
-    const match = auth.match(/^Bearer\s+(.+)$/i);
-    return match?.[1]?.trim() || '';
-}
-
-function verifySessionOrReturnResponse(request) {
-    const sessionSecret = Netlify.env.get("DIRECTORY_SESSION_SECRET");
-    if (!sessionSecret) {
-        return new Response(JSON.stringify({ error: "Variable d'environnement DIRECTORY_SESSION_SECRET manquante." }), {
-            status: 500,
-            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-        });
-    }
-
-    const url = new URL(request.url);
-    const token = getBearerToken(request) || (url.searchParams.get('session') || '').trim();
-    if (!token) {
-        return new Response(JSON.stringify({ error: "Accès refusé." }), {
-            status: 403,
-            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-        });
-    }
-
-    try {
-        jwt.verify(token, sessionSecret, { algorithms: ['HS256'] });
-        return null;
-    } catch {
-        return new Response(JSON.stringify({ error: "Accès refusé." }), {
-            status: 403,
-            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-        });
-    }
-}
-
 // La fonction est maintenant un "export default"
 export default async (request, context) => {
-    const authError = verifySessionOrReturnResponse(request);
+    const authError = verifyAccessOrResponse(request);
     if (authError) return authError;
 
     // Récupérer les paramètres de pagination depuis l'URL

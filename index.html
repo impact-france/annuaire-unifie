@@ -796,6 +796,8 @@
         const drawerIframe = document.getElementById('drawer-iframe');
         
         let sessionToken = '';
+        /** Mode B (iframe Liquid Bettermode) : ?memberId=… + header X-Embed-Parent */
+        let memberIdFromUrl = '';
         let currentPage = 1;
         let currentPagination = null;
         let allCompanies = []; // Pour les filtres uniquement
@@ -821,19 +823,37 @@
             return (params.get('session') || '').trim();
         }
 
+        function getMemberIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return (params.get('memberId') || '').trim();
+        }
+
+        function withAuthQuery(url) {
+            if (!memberIdFromUrl || sessionToken) return url;
+            const u = new URL(url, window.location.origin);
+            u.searchParams.set('memberId', memberIdFromUrl);
+            return u.pathname + u.search;
+        }
+
         function authFetch(url, options = {}) {
             const headers = new Headers(options.headers || {});
             if (sessionToken) {
                 headers.set('Authorization', `Bearer ${sessionToken}`);
             }
-            return fetch(url, { ...options, headers });
+            if (memberIdFromUrl && !sessionToken) {
+                headers.set('X-Embed-Parent', document.referrer || '');
+            }
+            return fetch(withAuthQuery(url), { ...options, headers });
         }
 
         function showAccessDenied() {
+            const hint = memberIdFromUrl
+                ? 'Ouvre cette page depuis Bettermode (iframe). Si le problème persiste, vérifie la variable Netlify BETTERMODE_EMBED_PARENT_ORIGINS.'
+                : 'Utilise un lien avec <code>?session=…</code> (Dynamic Block) ou <code>?memberId=…</code> depuis Bettermode (iframe).';
             directoryContainer.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #e53e3e;">
                     <h3 style="margin-bottom: 0.5rem;">Accès refusé</h3>
-                    <p>Ouvre l’annuaire depuis Bettermode (bloc dynamique). L’accès direct à cette URL n’est pas autorisé.</p>
+                    <p>${hint}</p>
                 </div>
             `;
             pagination.style.display = 'none';
@@ -1291,7 +1311,8 @@
         async function initializeApp() {
             try {
                 sessionToken = getSessionFromUrl();
-                if (!sessionToken) {
+                memberIdFromUrl = getMemberIdFromUrl();
+                if (!sessionToken && !memberIdFromUrl) {
                     loadingIndicator.style.display = 'none';
                     showAccessDenied();
                     return;
