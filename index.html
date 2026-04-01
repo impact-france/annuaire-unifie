@@ -663,10 +663,29 @@
 
         .drawer-iframe {
             width: 100%;
+            min-height: 420px;
             height: calc(100vh - 72px);
             height: calc(100dvh - 72px);
             border: none;
             display: block;
+        }
+
+        .drawer-content.form-mode-active {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .drawer-content.form-mode-active .form-container.active {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .drawer-content.form-mode-active .drawer-iframe {
+            flex: 1;
+            min-height: 360px;
         }
 
         @media (max-width: 767px) {
@@ -747,17 +766,18 @@
                 <button class="drawer-close" id="drawer-close" aria-label="Fermer">&times;</button>
             </div>
         </div>
-        <div class="drawer-content">
+        <div id="drawer-content" class="drawer-content">
             <div id="drawer-details" class="details-container">
                 <div class="drawer-section" id="drawer-company-kv"></div>
                 <div class="drawer-section">
                     <div class="contacts-header">
                         <div class="contacts-count" id="contacts-count">Contacts</div>
                     </div>
-                    <button id="contacts-reveal" class="secondary-button">Voir les contacts</button>
+                    <button id="contacts-reveal" type="button" class="secondary-button" style="display:none;" aria-live="polite">Réessayer</button>
                     <div id="contacts-loading" style="display:none; margin-top:0.75rem; color:#4a5568;">Chargement des contacts…</div>
                     <div id="contacts-empty" style="display:none; margin-top:0.75rem; color:#4a5568;">Aucun contact associé.</div>
                     <div id="contacts-list" class="contacts-list" style="display:none;"></div>
+                    <div id="typeform-open-hint" style="display:none; margin-top:0.75rem; padding:0.75rem 1rem; background:#ebf8ff; border:1px solid #90cdf4; border-radius:10px; font-size:0.9rem; color:#2c5282;"></div>
                 </div>
             </div>
             <div id="drawer-form" class="form-container">
@@ -794,6 +814,8 @@
         const contactsListEl = document.getElementById('contacts-list');
         const drawerForm = document.getElementById('drawer-form');
         const drawerIframe = document.getElementById('drawer-iframe');
+        const drawerContentEl = document.getElementById('drawer-content');
+        const typeformOpenHint = document.getElementById('typeform-open-hint');
         
         let sessionToken = '';
         /** Mode B (iframe Liquid Bettermode) : ?memberId=… + header X-Embed-Parent */
@@ -907,6 +929,7 @@
             drawerDetails.classList.add('hidden');
             drawerForm.classList.add('active');
             drawerBackBtn.style.display = 'inline-flex';
+            drawerContentEl?.classList.add('form-mode-active');
         }
 
         function exitFormMode() {
@@ -914,6 +937,7 @@
             drawerForm.classList.remove('active');
             drawerBackBtn.style.display = 'none';
             drawerIframe.src = '';
+            drawerContentEl?.classList.remove('form-mode-active');
         }
 
         function normalizeInclusiveWriting(text) {
@@ -971,8 +995,13 @@
             contactsEmptyEl.style.display = 'none';
             contactsListEl.style.display = 'none';
             contactsListEl.innerHTML = '';
+            contactsRevealBtn.style.display = 'none';
             contactsRevealBtn.disabled = false;
-            contactsRevealBtn.textContent = 'Voir les contacts';
+            contactsRevealBtn.textContent = 'Réessayer';
+            if (typeformOpenHint) {
+                typeformOpenHint.style.display = 'none';
+                typeformOpenHint.textContent = '';
+            }
         }
 
         function renderContacts(contacts) {
@@ -1033,8 +1062,8 @@
                 return;
             }
 
+            contactsRevealBtn.style.display = 'none';
             contactsRevealBtn.disabled = true;
-            contactsRevealBtn.textContent = 'Chargement…';
             contactsLoadingEl.style.display = 'block';
             contactsEmptyEl.style.display = 'none';
             contactsListEl.style.display = 'none';
@@ -1049,11 +1078,7 @@
                 contactsEmptyEl.style.display = 'block';
                 contactsRevealBtn.disabled = false;
                 contactsRevealBtn.textContent = 'Réessayer';
-            } finally {
-                if (contactsRevealBtn.textContent !== 'Réessayer') {
-                    contactsRevealBtn.disabled = false;
-                    contactsRevealBtn.textContent = 'Rafraîchir les contacts';
-                }
+                contactsRevealBtn.style.display = 'block';
             }
         }
 
@@ -1062,6 +1087,7 @@
             resetContactsUi();
             renderCompanyDetails(company);
             openDrawer();
+            void revealContacts();
         }
 
         function openContactForm(contact) {
@@ -1072,6 +1098,23 @@
 
             // URL Typeform existante (pattern annuaire-contacts)
             const url = `https://evenementiel887509.typeform.com/to/nyHQes4I#contact=${contactType}&idhubspot=${encodeURIComponent(hubspotId)}`;
+
+            // Dans une iframe (ex. Bettermode), Typeform bloque souvent l’affichage en iframe imbriquée → nouvel onglet.
+            // Ne pas passer `noopener` dans les features : sinon Chrome renvoie null même si l’onglet s’ouvre.
+            if (isInIframe()) {
+                const w = window.open(url, '_blank');
+                try {
+                    if (w) w.opener = null;
+                } catch (e) { /* cross-origin */ }
+                if (typeformOpenHint) {
+                    typeformOpenHint.style.display = 'block';
+                    typeformOpenHint.textContent = w
+                        ? 'Le formulaire s’ouvre dans un nouvel onglet. Reviens ici après l’envoi.'
+                        : 'Impossible d’ouvrir le formulaire : autorise les fenêtres pop-up pour ce site (barre d’adresse du navigateur).';
+                }
+                return;
+            }
+
             drawerIframe.src = url;
             enterFormMode();
         }
