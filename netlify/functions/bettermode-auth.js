@@ -210,7 +210,34 @@ export default async (request) => {
                 id: 'root',
                 name: 'Container',
                 props: { spacing: 'md' },
-                children: ['frame'],
+                children: ['debugText', 'debugLink', 'frame'],
+              },
+              {
+                id: 'debugText',
+                name: 'Text',
+                props: {
+                  value: 'Debug: réponse reçue, tentative de rendu Iframe ci-dessous.',
+                  size: 'sm',
+                },
+                children: [],
+              },
+              {
+                id: 'debugLink',
+                name: 'Link',
+                props: {
+                  href: iframeUrl,
+                  external: true,
+                  variant: 'primary',
+                },
+                children: ['debugLinkText'],
+              },
+              {
+                id: 'debugLinkText',
+                name: 'Text',
+                props: {
+                  value: 'Ouvrir l’annuaire dans un nouvel onglet (debug)',
+                },
+                children: [],
               },
               {
                 id: 'frame',
