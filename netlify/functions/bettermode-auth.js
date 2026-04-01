@@ -193,6 +193,16 @@ export default async (request) => {
     iframePath: '/index.html?session=…',
   });
 
+  // Format aligné sur la doc Bettermode « Show a block » :
+  // - l’interaction SHOW doit avoir id: "dynamic-block" (exemple officiel)
+  // - le bloc texte utilise name: "text" (minuscule) + format markdown
+  // Voir : https://developers.bettermode.com/docs/guide/apps/interactivity/interactions
+  const markdownIntro = [
+    '**Annuaire** — connexion Bettermode OK.',
+    '',
+    `[Ouvrir l’annuaire dans un nouvel onglet](${iframeUrl})`,
+  ].join('\n');
+
   const responseBody = {
     type: 'INTERACTION',
     status: 'Succeeded',
@@ -202,16 +212,16 @@ export default async (request) => {
       interactions: [
         {
           type: 'OPEN_TOAST',
-          id: 'directory-debug-toast',
+          id: 'toast-debug',
           props: {
-            title: 'Annuaire — debug',
+            title: 'Annuaire',
             status: 'Success',
-            description: 'La function a répondu et la signature est valide.',
+            description: 'Réponse serveur reçue (signature OK).',
           },
         },
         {
           type: 'SHOW',
-          id: 'directory-block',
+          id: 'dynamic-block',
           slate: {
             rootBlock: 'root',
             blocks: [
@@ -219,33 +229,24 @@ export default async (request) => {
                 id: 'root',
                 name: 'Container',
                 props: { spacing: 'md' },
-                children: ['debugText', 'debugLink'],
+                children: ['intro', 'frame'],
               },
               {
-                id: 'debugText',
-                name: 'Text',
+                id: 'intro',
+                name: 'text',
                 props: {
-                  value:
-                    'Debug: si tu vois ce texte, Bettermode a bien appliqué le SHOW et le Slate est valide.',
-                  size: 'sm',
+                  format: 'markdown',
+                  value: markdownIntro,
                 },
                 children: [],
               },
               {
-                id: 'debugLink',
-                name: 'Link',
+                id: 'frame',
+                name: 'Iframe',
                 props: {
-                  href: iframeUrl,
-                  external: true,
-                  variant: 'primary',
-                },
-                children: ['debugLinkText'],
-              },
-              {
-                id: 'debugLinkText',
-                name: 'Text',
-                props: {
-                  value: 'Ouvrir l’annuaire dans un nouvel onglet (debug)',
+                  src: iframeUrl,
+                  height: 900,
+                  title: 'Annuaire',
                 },
                 children: [],
               },
