@@ -201,6 +201,15 @@ export default async (request) => {
       interactionId,
       interactions: [
         {
+          type: 'OPEN_TOAST',
+          id: 'directory-debug-toast',
+          props: {
+            title: 'Annuaire — debug',
+            status: 'Success',
+            description: 'La function a répondu et la signature est valide.',
+          },
+        },
+        {
           type: 'SHOW',
           id: 'directory-block',
           slate: {
@@ -210,13 +219,14 @@ export default async (request) => {
                 id: 'root',
                 name: 'Container',
                 props: { spacing: 'md' },
-                children: ['debugText', 'debugLink', 'frame'],
+                children: ['debugText', 'debugLink'],
               },
               {
                 id: 'debugText',
                 name: 'Text',
                 props: {
-                  value: 'Debug: réponse reçue, tentative de rendu Iframe ci-dessous.',
+                  value:
+                    'Debug: si tu vois ce texte, Bettermode a bien appliqué le SHOW et le Slate est valide.',
                   size: 'sm',
                 },
                 children: [],
@@ -236,16 +246,6 @@ export default async (request) => {
                 name: 'Text',
                 props: {
                   value: 'Ouvrir l’annuaire dans un nouvel onglet (debug)',
-                },
-                children: [],
-              },
-              {
-                id: 'frame',
-                name: 'Iframe',
-                props: {
-                  src: iframeUrl,
-                  height: 900,
-                  title: 'Annuaire',
                 },
                 children: [],
               },
