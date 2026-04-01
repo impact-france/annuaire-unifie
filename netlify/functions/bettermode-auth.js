@@ -42,6 +42,23 @@ function json(status, body, headers = {}) {
   });
 }
 
+function slateResponse(status, slate, headers = {}) {
+  const serialized = JSON.stringify(slate);
+  console.log(`${LOG_PREFIX} slateResponse`, {
+    status,
+    bodyBytes: Buffer.byteLength(serialized, 'utf8'),
+    bodyPreview: serialized.slice(0, 500),
+  });
+  return new Response(serialized, {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      ...headers,
+    },
+  });
+}
+
 export default async (request) => {
   console.log(`${LOG_PREFIX} incoming`, {
     method: request.method,
@@ -196,69 +213,31 @@ export default async (request) => {
     iframePath: '/index.html?session=…',
   });
 
-  // Format aligné sur la doc Bettermode « Show a block » :
-  // - l’interaction SHOW doit avoir id: "dynamic-block" (exemple officiel)
-  // - le bloc texte utilise name: "text" (minuscule) + format markdown
-  // Voir : https://developers.bettermode.com/docs/guide/apps/interactivity/interactions
-  const markdownIntro = [
-    '**Annuaire** — connexion Bettermode OK.',
-    '',
-    `[Ouvrir l’annuaire dans un nouvel onglet](${iframeUrl})`,
-  ].join('\n');
-
-  const responseBody = {
-    type: 'INTERACTION',
-    status: 'Succeeded',
-    data: {
-      appId,
-      interactionId,
-      interactions: [
-        {
-          type: 'OPEN_TOAST',
-          id: 'toast-debug',
-          props: {
-            title: 'Annuaire',
-            status: 'Success',
-            description: 'Réponse serveur reçue (signature OK).',
-          },
+  // IMPORTANT (Bettermode Dynamic Block):
+  // Pour le rendu initial d’un Dynamic Block, Bettermode attend généralement un Slate "brut"
+  // (rootBlock + blocks) plutôt qu’un wrapper INTERACTION (qui sert aux interactions clic/shortcut).
+  // On renvoie donc directement le modèle Slate.
+  const slate = {
+    rootBlock: 'root',
+    blocks: [
+      {
+        id: 'root',
+        name: 'Container',
+        props: { spacing: 'md' },
+        children: ['frame'],
+      },
+      {
+        id: 'frame',
+        name: 'Iframe',
+        props: {
+          src: iframeUrl,
+          height: 900,
+          title: 'Annuaire',
         },
-        {
-          type: 'SHOW',
-          id: 'dynamic-block',
-          slate: {
-            rootBlock: 'root',
-            blocks: [
-              {
-                id: 'root',
-                name: 'Container',
-                props: { spacing: 'md' },
-                children: ['intro', 'frame'],
-              },
-              {
-                id: 'intro',
-                name: 'text',
-                props: {
-                  format: 'markdown',
-                  value: markdownIntro,
-                },
-                children: [],
-              },
-              {
-                id: 'frame',
-                name: 'Iframe',
-                props: {
-                  src: iframeUrl,
-                  height: 900,
-                  title: 'Annuaire',
-                },
-                children: [],
-              },
-            ],
-          },
-        },
-      ],
-    },
+        children: [],
+      },
+    ],
   };
 
-  return json(200, responseBody);
+  return slateResponse(200, slate);
 };
