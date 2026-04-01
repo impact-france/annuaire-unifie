@@ -186,6 +186,9 @@ export default async (request) => {
   const origin = new URL(request.url).origin;
   const iframeUrl = `${origin}/index.html?session=${encodeURIComponent(sessionToken)}`;
 
+  // Debug: URL complète pour test manuel (token valable ~10 min)
+  console.log(`${LOG_PREFIX} iframeUrl`, iframeUrl);
+
   console.log(`${LOG_PREFIX} success`, {
     appId,
     interactionId,
