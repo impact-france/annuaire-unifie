@@ -853,15 +853,6 @@
             <select id="secteur-filter">
                 <option value="">Tous les secteurs</option>
             </select>
-            <select id="impact40120-filter">
-                <option value="">Impact 40/120</option>
-                <option value="Lauréat - Impact 40 - 2026">Lauréat - Impact 40 - 2026</option>
-                <option value="Lauréat - Impact 120 - 2026">Lauréat - Impact 120 - 2026</option>
-                <option value="Lauréat - Impact 40 - 2025">Lauréat - Impact 40 - 2025</option>
-                <option value="Lauréat - Impact 120 - 2025">Lauréat - Impact 120 - 2025</option>
-                <option value="Lauréat - Impact 40 - 2024">Lauréat - Impact 40 - 2024</option>
-                <option value="Lauréat - Impact 120 - 2024">Lauréat - Impact 120 - 2024</option>
-            </select>
         </div>
 
         <div class="impact-filters-container">
@@ -952,7 +943,6 @@
         const searchInput = document.getElementById('search-input');
         const regionFilter = document.getElementById('region-filter');
         const secteurFilter = document.getElementById('secteur-filter');
-        const impact40120Filter = document.getElementById('impact40120-filter');
         const impactScoreFilter = document.getElementById('impact-score-filter');
         const sortFilter = document.getElementById('sort-filter');
         const pagination = document.getElementById('pagination');
@@ -1463,14 +1453,13 @@
                 search: searchInput.value.trim(),
                 region: regionFilter.value,
                 secteur: secteurFilter.value,
-                impact40120: impact40120Filter?.value || '',
                 hasImpactScore: impactScoreFilter.checked,
                 sortBy: sortFilter.value,
             };
         }
 
         function applyClientSideFilters() {
-            const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
+            const { search, region, secteur, hasImpactScore, sortBy } = getActiveFilters();
 
             const searchLower = (search || '').toLowerCase();
             filteredCompanies = allCompanies.filter((company) => {
@@ -1493,11 +1482,6 @@
                     const secteurComplet = company.secteur_d_activite || '';
                     const secteurName = secteurComplet.split(';')[0].trim();
                     if (secteurName !== secteur) return false;
-                }
-
-                if (impact40120) {
-                    const v = (company.impact_40_120 || '').trim();
-                    if (v !== impact40120) return false;
                 }
 
                 if (hasImpactScore) {
@@ -1553,9 +1537,9 @@
             });
         }
 
-        async function fetchCompanies(page = 1, search = '', region = '', secteur = '', impact40120 = '', hasImpactScore = false, sortBy = 'default') {
+        async function fetchCompanies(page = 1, search = '', region = '', secteur = '', hasImpactScore = false, sortBy = 'default') {
             // Éviter les requêtes en double
-            const currentParams = JSON.stringify({ page, search, region, secteur, impact40120, hasImpactScore, sortBy });
+            const currentParams = JSON.stringify({ page, search, region, secteur, hasImpactScore, sortBy });
             if (isLoading || lastRequestParams === currentParams) {
                 return;
             }
@@ -1572,7 +1556,6 @@
                     ...(search && { search }),
                     ...(region && { region }),
                     ...(secteur && { secteur }),
-                    ...(impact40120 && { impact40120 }),
                     ...(hasImpactScore && { hasImpactScore: 'true' }),
                     ...(sortBy !== 'default' && { sortBy })
                 });
@@ -1652,8 +1635,8 @@
                 return;
             }
 
-            const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
-            fetchCompanies(currentPage, search, region, secteur, impact40120, hasImpactScore, sortBy);
+            const { search, region, secteur, hasImpactScore, sortBy } = getActiveFilters();
+            fetchCompanies(currentPage, search, region, secteur, hasImpactScore, sortBy);
         }
 
         // Event listeners avec debouncing pour la recherche
@@ -1664,7 +1647,6 @@
 
         regionFilter.addEventListener('change', applyFilters);
         secteurFilter.addEventListener('change', applyFilters);
-        impact40120Filter?.addEventListener('change', applyFilters);
         impactScoreFilter.addEventListener('change', applyFilters);
         sortFilter.addEventListener('change', applyFilters);
 
@@ -1676,8 +1658,8 @@
                     return;
                 }
                 currentPage--;
-                const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
-                fetchCompanies(currentPage, search, region, secteur, impact40120, hasImpactScore, sortBy);
+                const { search, region, secteur, hasImpactScore, sortBy } = getActiveFilters();
+                fetchCompanies(currentPage, search, region, secteur, hasImpactScore, sortBy);
             }
         });
 
@@ -1688,8 +1670,8 @@
                     return;
                 }
                 currentPage++;
-                const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
-                fetchCompanies(currentPage, search, region, secteur, impact40120, hasImpactScore, sortBy);
+                const { search, region, secteur, hasImpactScore, sortBy } = getActiveFilters();
+                fetchCompanies(currentPage, search, region, secteur, hasImpactScore, sortBy);
             }
         });
 
