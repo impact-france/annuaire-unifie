@@ -67,11 +67,6 @@
 
         /* Badge Impact 40/120 */
         .impact-laureat-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 11;
-            pointer-events: none;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -308,15 +303,20 @@
             word-wrap: break-word;
         }
 
-        .impact-score-container {
+        .impact-badges-container {
             position: absolute;
             top: 50%;
             right: 1rem;
             transform: translateY(-50%);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            z-index: 10;
+            gap: 0.6rem;
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        .impact-badges-container .impact-laureat-badge {
+            pointer-events: none;
         }
 
         .impact-score-macaron {
@@ -986,6 +986,8 @@
         let currentPage = 1;
         let currentPagination = null;
         let allCompanies = []; // Pour les filtres uniquement
+        let filteredCompanies = [];
+        let useClientSideFiltering = false;
         let filterOptions = { regions: [], secteurs: [] };
         let searchTimeout = null;
         let isLoading = false;
@@ -1393,9 +1395,7 @@
 
                 const macaronPath = getMacaronPath(impactScore);
                 const impactScoreMacaron = (impactScore && impactScorePublic === 'Oui' && macaronPath) ? `
-                    <div class="impact-score-container">
-                        <img src="${macaronPath}" alt="Impact Score ${impactScore}" class="impact-score-macaron" onerror="this.style.display='none';">
-                    </div>
+                    <img src="${macaronPath}" alt="Impact Score ${impactScore}" class="impact-score-macaron" onerror="this.style.display='none';">
                 ` : '';
 
                 // Créer le logo seulement si disponible et si ce n'est pas LinkedIn
@@ -1404,13 +1404,17 @@
                     `<img src="${logoUrl}" alt="Logo ${name}" class="company-logo" onerror="this.style.display='none';">` : '';
                 
                 card.innerHTML = `
-                    ${badge && badge.src ? `
-                        <div class="impact-laureat-badge" aria-label="Lauréat Impact ${badge.level}">
-                            <img src="${badge.src}" alt="Lauréat Impact ${badge.level}" onerror="this.style.display='none';" />
-                            ${badge.yearsLabel ? `<div class="impact-laureat-year">${badge.yearsLabel}</div>` : ''}
+                    ${(badge && badge.src) || impactScoreMacaron ? `
+                        <div class="impact-badges-container" aria-label="Badges">
+                            ${badge && badge.src ? `
+                                <div class="impact-laureat-badge" aria-label="Lauréat Impact ${badge.level}">
+                                    <img src="${badge.src}" alt="Lauréat Impact ${badge.level}" onerror="this.style.display='none';" />
+                                    ${badge.yearsLabel ? `<div class="impact-laureat-year">${badge.yearsLabel}</div>` : ''}
+                                </div>
+                            ` : ''}
+                            ${impactScoreMacaron}
                         </div>
                     ` : ''}
-                    ${impactScoreMacaron}
                     <h3>${logoElement}${name}</h3>
                     <p><strong>Secteur :</strong> ${secteur}</p>
                     <p><strong>Région :</strong> ${region}</p>
@@ -1449,6 +1453,101 @@
             
             // Afficher la pagination si nécessaire
             pagination.style.display = paginationData.totalPages > 1 ? 'flex' : 'none';
+        }
+
+        function getActiveFilters() {
+            return {
+                search: searchInput.value.trim(),
+                region: regionFilter.value,
+                secteur: secteurFilter.value,
+                impact40120: impact40120Filter?.value || '',
+                hasImpactScore: impactScoreFilter.checked,
+                sortBy: sortFilter.value,
+            };
+        }
+
+        function applyClientSideFilters() {
+            const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
+
+            const searchLower = (search || '').toLowerCase();
+            filteredCompanies = allCompanies.filter((company) => {
+                if (searchLower) {
+                    const name = (company.name || '').toLowerCase();
+                    const secteurComplet = (company.secteur_d_activite || '').toLowerCase();
+                    const secteurName = secteurComplet.split(';')[0].trim();
+                    const regionName = (company.region___standardise || '').toLowerCase();
+                    const website = (company.website || '').toLowerCase();
+                    const matchesSearch =
+                        name.includes(searchLower) ||
+                        secteurName.includes(searchLower) ||
+                        regionName.includes(searchLower) ||
+                        website.includes(searchLower);
+                    if (!matchesSearch) return false;
+                }
+
+                if (region && company.region___standardise !== region) return false;
+                if (secteur) {
+                    const secteurComplet = company.secteur_d_activite || '';
+                    const secteurName = secteurComplet.split(';')[0].trim();
+                    if (secteurName !== secteur) return false;
+                }
+
+                if (impact40120) {
+                    const v = (company.impact_40_120 || '').trim();
+                    if (v !== impact40120) return false;
+                }
+
+                if (hasImpactScore) {
+                    const hasScore = company.note_impact_score && company.note_impact_score_publique === 'Oui';
+                    if (!hasScore) return false;
+                }
+
+                return true;
+            });
+
+            filteredCompanies.sort((a, b) => {
+                if (sortBy === 'score_asc') {
+                    const scoreA = parseFloat(a.note_impact_score) || -1;
+                    const scoreB = parseFloat(b.note_impact_score) || -1;
+                    if (scoreA === scoreB) {
+                        const nameA = (a.name || '').trim().toLowerCase();
+                        const nameB = (b.name || '').trim().toLowerCase();
+                        return nameA.localeCompare(nameB, 'fr');
+                    }
+                    return scoreA - scoreB;
+                } else if (sortBy === 'score_desc') {
+                    const scoreA = parseFloat(a.note_impact_score) || -1;
+                    const scoreB = parseFloat(b.note_impact_score) || -1;
+                    if (scoreA === scoreB) {
+                        const nameA = (a.name || '').trim().toLowerCase();
+                        const nameB = (b.name || '').trim().toLowerCase();
+                        return nameA.localeCompare(nameB, 'fr');
+                    }
+                    return scoreB - scoreA;
+                }
+                const nameA = (a.name || '').trim().toLowerCase();
+                const nameB = (b.name || '').trim().toLowerCase();
+                return nameA.localeCompare(nameB, 'fr');
+            });
+        }
+
+        function renderClientSidePage(page) {
+            const limit = 20;
+            const totalItems = filteredCompanies.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+            const current = Math.min(Math.max(1, page), totalPages);
+            currentPage = current;
+
+            const startIndex = (current - 1) * limit;
+            const endIndex = startIndex + limit;
+            const pageItems = filteredCompanies.slice(startIndex, endIndex);
+
+            displayCompanies(pageItems, {
+                currentPage: current,
+                totalPages,
+                totalItems,
+                itemsPerPage: limit,
+            });
         }
 
         async function fetchCompanies(page = 1, search = '', region = '', secteur = '', impact40120 = '', hasImpactScore = false, sortBy = 'default') {
@@ -1544,13 +1643,13 @@
 
         function applyFilters() {
             currentPage = 1; // Reset à la première page
-            const search = searchInput.value.trim();
-            const region = regionFilter.value;
-            const secteur = secteurFilter.value;
-            const impact40120 = impact40120Filter?.value || '';
-            const hasImpactScore = impactScoreFilter.checked;
-            const sortBy = sortFilter.value;
-            
+            if (useClientSideFiltering) {
+                applyClientSideFilters();
+                renderClientSidePage(1);
+                return;
+            }
+
+            const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
             fetchCompanies(currentPage, search, region, secteur, impact40120, hasImpactScore, sortBy);
         }
 
@@ -1569,26 +1668,24 @@
         // Event listeners pour la pagination
         prevBtn.addEventListener('click', () => {
             if (currentPage > 1) {
+                if (useClientSideFiltering) {
+                    renderClientSidePage(currentPage - 1);
+                    return;
+                }
                 currentPage--;
-                const search = searchInput.value.trim();
-                const region = regionFilter.value;
-                const secteur = secteurFilter.value;
-                const impact40120 = impact40120Filter?.value || '';
-                const hasImpactScore = impactScoreFilter.checked;
-                const sortBy = sortFilter.value;
+                const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
                 fetchCompanies(currentPage, search, region, secteur, impact40120, hasImpactScore, sortBy);
             }
         });
 
         nextBtn.addEventListener('click', () => {
             if (currentPagination && currentPage < currentPagination.totalPages) {
+                if (useClientSideFiltering) {
+                    renderClientSidePage(currentPage + 1);
+                    return;
+                }
                 currentPage++;
-                const search = searchInput.value.trim();
-                const region = regionFilter.value;
-                const secteur = secteurFilter.value;
-                const impact40120 = impact40120Filter?.value || '';
-                const hasImpactScore = impactScoreFilter.checked;
-                const sortBy = sortFilter.value;
+                const { search, region, secteur, impact40120, hasImpactScore, sortBy } = getActiveFilters();
                 fetchCompanies(currentPage, search, region, secteur, impact40120, hasImpactScore, sortBy);
             }
         });
@@ -1631,6 +1728,7 @@
                     }
                     populateFilters();
                     showLoading('Chargement des entreprises…', 'On prépare les filtres et la liste.');
+                    useClientSideFiltering = Array.isArray(allCompanies) && allCompanies.length > 0;
                 } else {
                     if (response.status === 403) {
                         hideLoading();
@@ -1640,7 +1738,13 @@
                     console.warn('Impossible de charger toutes les entreprises pour les filtres, utilisation de la pagination uniquement');
                 }
                 
-                // Ensuite, charger la première page avec pagination
+                // Ensuite, charger la première page
+                if (useClientSideFiltering) {
+                    applyClientSideFilters();
+                    renderClientSidePage(1);
+                    hideLoading();
+                    return;
+                }
                 await fetchCompanies(1);
 
             } catch (error) {
