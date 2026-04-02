@@ -22,6 +22,7 @@ export default async (request, context) => {
     const secteur = url.searchParams.get('secteur') || '';
     const taille = url.searchParams.get('taille') || '';
     const hasImpactScore = url.searchParams.get('hasImpactScore') === 'true';
+    const impact40120 = (url.searchParams.get('impact40120') || '').trim();
     const sortBy = url.searchParams.get('sortBy') || 'default';
     
     // On vérifie le cache
@@ -32,7 +33,7 @@ export default async (request, context) => {
         // Appliquer les filtres côté serveur si demandé
         let filteredCompanies = cachedCompanies;
         
-        if (search || region || secteur || taille || hasImpactScore) {
+        if (search || region || secteur || taille || hasImpactScore || impact40120) {
             filteredCompanies = cachedCompanies.filter(company => {
                 // Filtre par recherche textuelle
                 if (search) {
@@ -64,6 +65,12 @@ export default async (request, context) => {
                     const hasScore = company.note_impact_score && 
                                     company.note_impact_score_publique === 'Oui';
                     if (!hasScore) return false;
+                }
+
+                // Filtre Impact 40/120 (valeur exacte)
+                if (impact40120) {
+                    const v = (company.impact_40_120 || '').trim();
+                    if (v !== impact40120) return false;
                 }
                 
                 return true;
@@ -155,7 +162,8 @@ export default async (request, context) => {
         "website",
         "note_impact_score",
         "note_impact_score_publique",
-        "hs_logo_url"
+        "hs_logo_url",
+        "impact_40_120"
     ];
 
     try {
@@ -257,7 +265,7 @@ export default async (request, context) => {
         // Appliquer les filtres si demandé
         let filteredCompanies = allCompanies;
         
-        if (search || region || secteur || taille || hasImpactScore) {
+        if (search || region || secteur || taille || hasImpactScore || impact40120) {
             filteredCompanies = allCompanies.filter(company => {
                 // Filtre par recherche textuelle
                 if (search) {
@@ -289,6 +297,12 @@ export default async (request, context) => {
                     const hasScore = company.note_impact_score && 
                                     company.note_impact_score_publique === 'Oui';
                     if (!hasScore) return false;
+                }
+
+                // Filtre Impact 40/120 (valeur exacte)
+                if (impact40120) {
+                    const v = (company.impact_40_120 || '').trim();
+                    if (v !== impact40120) return false;
                 }
                 
                 return true;
