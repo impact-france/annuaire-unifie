@@ -180,15 +180,20 @@
         }
 
         #loading {
-            text-align: center;
-            font-style: italic;
-            color: #4a5568;
-            font-size: 1.1rem;
-            padding: 2rem;
-            display: flex;
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: none;
             align-items: center;
             justify-content: center;
-            gap: 1rem;
+            text-align: center;
+            padding: 2.5rem 1.5rem;
+            gap: 0.75rem;
+            flex-direction: column;
+            background: rgba(248, 250, 252, 0.92);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            color: #2d3748;
         }
 
         .loading-spinner {
@@ -198,6 +203,18 @@
             border-top: 2px solid #3182ce;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            color: #4a5568;
+            max-width: 34rem;
         }
 
         @keyframes spin {
@@ -743,9 +760,10 @@
 
 
         <div id="loading">
-        <div class="loading-spinner"></div>
-        Vérification de l'accès...
-    </div>
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div class="loading-text">Vérification de l’accès…</div>
+            <div class="loading-subtext">Merci de patienter, on sécurise l’accès à l’annuaire.</div>
+        </div>
     <div id="company-directory"></div>
         
         <!-- Pagination -->
@@ -777,11 +795,18 @@
                     <div id="contacts-loading" style="display:none; margin-top:0.75rem; color:#4a5568;">Chargement des contacts…</div>
                     <div id="contacts-empty" style="display:none; margin-top:0.75rem; color:#4a5568;">Aucun contact associé.</div>
                     <div id="contacts-list" class="contacts-list" style="display:none;"></div>
-                    <div id="typeform-open-hint" style="display:none; margin-top:0.75rem; padding:0.75rem 1rem; background:#ebf8ff; border:1px solid #90cdf4; border-radius:10px; font-size:0.9rem; color:#2c5282;"></div>
                 </div>
             </div>
             <div id="drawer-form" class="form-container">
-                <iframe id="drawer-iframe" class="drawer-iframe" src="" title="Formulaire de contact"></iframe>
+                <iframe
+                    id="drawer-iframe"
+                    class="drawer-iframe"
+                    src=""
+                    title="Contacter un adhérent"
+                    allow="camera; microphone; fullscreen; payment"
+                    loading="eager"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                ></iframe>
             </div>
         </div>
     </div>
@@ -815,7 +840,6 @@
         const drawerForm = document.getElementById('drawer-form');
         const drawerIframe = document.getElementById('drawer-iframe');
         const drawerContentEl = document.getElementById('drawer-content');
-        const typeformOpenHint = document.getElementById('typeform-open-hint');
         
         let sessionToken = '';
         /** Mode B (iframe Liquid Bettermode) : ?memberId=… + header X-Embed-Parent */
@@ -938,6 +962,9 @@
             drawerBackBtn.style.display = 'none';
             drawerIframe.src = '';
             drawerContentEl?.classList.remove('form-mode-active');
+            if (selectedCompany?.name) {
+                drawerTitle.textContent = selectedCompany.name;
+            }
         }
 
         function normalizeInclusiveWriting(text) {
@@ -998,10 +1025,6 @@
             contactsRevealBtn.style.display = 'none';
             contactsRevealBtn.disabled = false;
             contactsRevealBtn.textContent = 'Réessayer';
-            if (typeformOpenHint) {
-                typeformOpenHint.style.display = 'none';
-                typeformOpenHint.textContent = '';
-            }
         }
 
         function renderContacts(contacts) {
@@ -1096,25 +1119,10 @@
             const contactType = isVip ? 'vip' : 'nonvip';
             const hubspotId = contact?.hubspotId || '';
 
-            // URL Typeform existante (pattern annuaire-contacts)
+            // Typeform (iframe dans le drawer, y compris iframe Bettermode imbriquée)
             const url = `https://evenementiel887509.typeform.com/to/nyHQes4I#contact=${contactType}&idhubspot=${encodeURIComponent(hubspotId)}`;
 
-            // Dans une iframe (ex. Bettermode), Typeform bloque souvent l’affichage en iframe imbriquée → nouvel onglet.
-            // Ne pas passer `noopener` dans les features : sinon Chrome renvoie null même si l’onglet s’ouvre.
-            if (isInIframe()) {
-                const w = window.open(url, '_blank');
-                try {
-                    if (w) w.opener = null;
-                } catch (e) { /* cross-origin */ }
-                if (typeformOpenHint) {
-                    typeformOpenHint.style.display = 'block';
-                    typeformOpenHint.textContent = w
-                        ? 'Le formulaire s’ouvre dans un nouvel onglet. Reviens ici après l’envoi.'
-                        : 'Impossible d’ouvrir le formulaire : autorise les fenêtres pop-up pour ce site (barre d’adresse du navigateur).';
-                }
-                return;
-            }
-
+            drawerTitle.textContent = 'Contacter un adhérent';
             drawerIframe.src = url;
             enterFormMode();
         }
@@ -1385,7 +1393,11 @@
                         allCompanies = data; // Fallback pour l'ancien format
                     }
                     populateFilters();
-                    loadingIndicator.innerHTML = `<div class="loading-spinner"></div>Chargement des entreprises...`;
+                    loadingIndicator.innerHTML = `
+                        <div class="loading-spinner" aria-hidden="true"></div>
+                        <div class="loading-text">Chargement des entreprises…</div>
+                        <div class="loading-subtext">On prépare les filtres et la liste.</div>
+                    `;
                 } else {
                     if (response.status === 403) {
                         loadingIndicator.style.display = 'none';

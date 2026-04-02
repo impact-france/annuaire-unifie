@@ -31,6 +31,7 @@ Ce projet sert un annuaire via une iframe dans Bettermode, avec un accès **prot
 - `BETTERMODE_EMBED_RELAX_PARENT` : optionnel, mettre `true` si Bettermode envoie un `referrer` parent vide (Referrer-Policy). **Moins strict** : n’utilise que si nécessaire.
 - `HUBSPOT_ACCESS_TOKEN` : token HubSpot.
 - `HUBSPOT_COMPANY_LIST_ID` : ID de liste HubSpot (optionnel, défaut `"412"` dans le code).
+- `HUBSPOT_CONTACT_LIST_ID` : ID de liste HubSpot autorisée pour les contacts (optionnel, défaut `"633"` dans le code).
 
 ## Endpoints
 
