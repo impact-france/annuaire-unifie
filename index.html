@@ -705,6 +705,54 @@
             min-height: 360px;
         }
 
+        /* Form iframe container (Typeform) */
+        .drawer-form-wrap {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            min-height: 420px;
+            height: min(80vh, calc(100dvh - 92px));
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .drawer-form-status {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #4a5568;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .drawer-form-status.active {
+            display: flex;
+        }
+
+        .drawer-form-fallback {
+            display: none;
+            padding: 1rem;
+            border: 1px solid #fed7d7;
+            border-radius: 12px;
+            background: #fff5f5;
+            color: #c53030;
+            font-size: 0.92rem;
+        }
+
+        .drawer-form-fallback.active {
+            display: block;
+        }
+
+        .drawer-form-fallback .secondary-button {
+            margin-top: 0.75rem;
+        }
+
         @media (max-width: 767px) {
             .drawer-panel {
                 width: 100%;
@@ -798,15 +846,29 @@
                 </div>
             </div>
             <div id="drawer-form" class="form-container">
-                <iframe
-                    id="drawer-iframe"
-                    class="drawer-iframe"
-                    src=""
-                    title="Contacter un adhérent"
-                    allow="camera; microphone; fullscreen; payment"
-                    loading="eager"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                ></iframe>
+                <div class="drawer-form-wrap">
+                    <div id="drawer-form-status" class="drawer-form-status">
+                        <div class="loading-spinner" aria-hidden="true"></div>
+                        <span>Chargement du formulaire…</span>
+                    </div>
+                    <div id="drawer-form-fallback" class="drawer-form-fallback">
+                        <div style="font-weight:700; margin-bottom:0.25rem;">Le formulaire ne s’affiche pas</div>
+                        <div>
+                            Dans certains contextes (iframe imbriquée), Typeform peut bloquer l’affichage.
+                            Tu peux l’ouvrir dans un nouvel onglet si besoin.
+                        </div>
+                        <button id="drawer-form-open-external" type="button" class="secondary-button">Ouvrir le formulaire</button>
+                    </div>
+                    <iframe
+                        id="drawer-iframe"
+                        class="drawer-iframe"
+                        src=""
+                        title="Contacter un adhérent"
+                        allow="camera; microphone; fullscreen; payment"
+                        loading="eager"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                    ></iframe>
+                </div>
             </div>
         </div>
     </div>
@@ -840,6 +902,9 @@
         const drawerForm = document.getElementById('drawer-form');
         const drawerIframe = document.getElementById('drawer-iframe');
         const drawerContentEl = document.getElementById('drawer-content');
+        const drawerFormStatus = document.getElementById('drawer-form-status');
+        const drawerFormFallback = document.getElementById('drawer-form-fallback');
+        const drawerFormOpenExternal = document.getElementById('drawer-form-open-external');
         
         let sessionToken = '';
         /** Mode B (iframe Liquid Bettermode) : ?memberId=… + header X-Embed-Parent */
@@ -855,6 +920,8 @@
         let selectedCompany = null;
         const companyContactsCache = new Map(); // companyId -> { contacts, fetchedAt }
         const CONTACTS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+        let currentFormUrl = '';
+        let formLoadTimer = null;
 
         function isInIframe() {
             try {
@@ -895,6 +962,25 @@
                 headers.set('X-Embed-Parent', document.referrer || '');
             }
             return fetch(withAuthQuery(url), { ...options, headers });
+        }
+
+        function setLoading(message, subtext) {
+            const safeMsg = (message || 'Chargement…').toString();
+            const safeSub = (subtext || '').toString();
+            loadingIndicator.innerHTML = `
+                <div class="loading-spinner" aria-hidden="true"></div>
+                <div class="loading-text">${safeMsg}</div>
+                ${safeSub ? `<div class="loading-subtext">${safeSub}</div>` : ''}
+            `;
+        }
+
+        function showLoading(message, subtext) {
+            setLoading(message, subtext);
+            loadingIndicator.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
         }
 
         function showAccessDenied(reason) {
@@ -960,10 +1046,17 @@
             drawerDetails.classList.remove('hidden');
             drawerForm.classList.remove('active');
             drawerBackBtn.style.display = 'none';
+            drawerFormStatus?.classList.remove('active');
+            drawerFormFallback?.classList.remove('active');
             drawerIframe.src = '';
             drawerContentEl?.classList.remove('form-mode-active');
             if (selectedCompany?.name) {
                 drawerTitle.textContent = selectedCompany.name;
+            }
+            currentFormUrl = '';
+            if (formLoadTimer) {
+                clearTimeout(formLoadTimer);
+                formLoadTimer = null;
             }
         }
 
@@ -1123,8 +1216,18 @@
             const url = `https://evenementiel887509.typeform.com/to/nyHQes4I#contact=${contactType}&idhubspot=${encodeURIComponent(hubspotId)}`;
 
             drawerTitle.textContent = 'Contacter un adhérent';
+            currentFormUrl = url;
+            drawerFormFallback?.classList.remove('active');
+            drawerFormStatus?.classList.add('active');
             drawerIframe.src = url;
             enterFormMode();
+
+            if (formLoadTimer) clearTimeout(formLoadTimer);
+            formLoadTimer = setTimeout(() => {
+                // Si l’iframe est bloquée (XFO/CSP), l’utilisateur voit souvent un blanc.
+                drawerFormStatus?.classList.remove('active');
+                drawerFormFallback?.classList.add('active');
+            }, 3500);
         }
 
         function displayCompanies(companies, paginationData) {
@@ -1229,7 +1332,7 @@
             try {
                 isLoading = true;
                 lastRequestParams = currentParams;
-                loadingIndicator.style.display = 'block';
+                showLoading('Chargement…');
                 
                 // Construire l'URL avec les paramètres
                 const params = new URLSearchParams({
@@ -1279,7 +1382,7 @@
                 `;
             } finally {
                 isLoading = false;
-                loadingIndicator.style.display = 'none';
+                hideLoading();
             }
         }
 
@@ -1376,12 +1479,12 @@
                 sessionToken = getSessionFromUrl();
                 memberIdFromUrl = getMemberIdFromUrl();
                 if (!sessionToken && !memberIdFromUrl) {
-                    loadingIndicator.style.display = 'none';
+                    hideLoading();
                     showAccessDenied('missing');
                     return;
                 }
 
-                loadingIndicator.style.display = 'block';
+                showLoading('Vérification de l’accès…', 'Merci de patienter, on sécurise l’accès à l’annuaire.');
 
                 // D'abord, récupérer toutes les entreprises pour peupler les filtres
                 const response = await authFetch('/.netlify/functions/get-companies?limit=5000');
@@ -1393,14 +1496,10 @@
                         allCompanies = data; // Fallback pour l'ancien format
                     }
                     populateFilters();
-                    loadingIndicator.innerHTML = `
-                        <div class="loading-spinner" aria-hidden="true"></div>
-                        <div class="loading-text">Chargement des entreprises…</div>
-                        <div class="loading-subtext">On prépare les filtres et la liste.</div>
-                    `;
+                    showLoading('Chargement des entreprises…', 'On prépare les filtres et la liste.');
                 } else {
                     if (response.status === 403) {
-                        loadingIndicator.style.display = 'none';
+                        hideLoading();
                         showAccessDenied(memberIdFromUrl && !sessionToken ? 'embed_api' : undefined);
                         return;
                     }
@@ -1427,12 +1526,27 @@
                             </button>
                         </div>
                     `;
-                loadingIndicator.style.display = 'none';
+                hideLoading();
                 }
             }
         }
 
         initializeApp();
+
+        drawerIframe.addEventListener('load', () => {
+            // Si l’iframe se charge correctement, on masque le statut + fallback.
+            drawerFormStatus?.classList.remove('active');
+            drawerFormFallback?.classList.remove('active');
+            if (formLoadTimer) {
+                clearTimeout(formLoadTimer);
+                formLoadTimer = null;
+            }
+        });
+
+        drawerFormOpenExternal?.addEventListener('click', () => {
+            if (!currentFormUrl) return;
+            window.open(currentFormUrl, '_blank', 'noopener,noreferrer');
+        });
     </script>
 </body>
 </html>
