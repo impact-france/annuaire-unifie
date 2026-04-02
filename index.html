@@ -854,13 +854,13 @@
                 <option value="">Tous les secteurs</option>
             </select>
             <select id="impact40120-filter">
-                <option value="">Impact 40/120 (tous)</option>
+                <option value="">Impact 40/120</option>
+                <option value="Lauréat - Impact 40 - 2026">Lauréat - Impact 40 - 2026</option>
+                <option value="Lauréat - Impact 120 - 2026">Lauréat - Impact 120 - 2026</option>
                 <option value="Lauréat - Impact 40 - 2025">Lauréat - Impact 40 - 2025</option>
                 <option value="Lauréat - Impact 120 - 2025">Lauréat - Impact 120 - 2025</option>
                 <option value="Lauréat - Impact 40 - 2024">Lauréat - Impact 40 - 2024</option>
                 <option value="Lauréat - Impact 120 - 2024">Lauréat - Impact 120 - 2024</option>
-                <option value="Lauréat - Impact 40 - 2026">Lauréat - Impact 40 - 2026</option>
-                <option value="Lauréat - Impact 120 - 2026">Lauréat - Impact 120 - 2026</option>
             </select>
         </div>
 
@@ -1193,7 +1193,10 @@
                 level,
                 years: yearsArr,
                 yearsLabel: yearsArr.join(', '),
-                src: `./assets/impact-laureat/impact-${level}.png`,
+                // Fichiers attendus à la racine de /assets :
+                // - /assets/impact-40.png
+                // - /assets/impact-120.png
+                src: `./assets/impact-${level}.png`,
             };
         }
 
