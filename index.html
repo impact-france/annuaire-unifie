@@ -120,6 +120,29 @@
             color: #2d3748;
         }
 
+        .impact-laureat-info-link {
+            display: inline-block;
+            margin-top: 0.35rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #2b6cb0;
+            text-decoration: underline;
+            text-align: center;
+            max-width: 260px;
+            line-height: 1.35;
+        }
+
+        .impact-laureat-info-link:hover,
+        .impact-laureat-info-link:focus-visible {
+            color: #2c5282;
+            outline: none;
+        }
+
+        .impact-laureat-info-link:focus-visible {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3182ce;
+            border-radius: 4px;
+        }
+
         .impact-filters-container {
             display: flex;
             gap: 1rem;
@@ -1190,6 +1213,13 @@
             };
         }
 
+        /** Libellé pour la fiche entreprise (lien Impact France). */
+        function getImpactLaureatLinkLabel(badge) {
+            if (!badge || !badge.level) return '';
+            const yearsPart = badge.yearsLabel ? ` en ${badge.yearsLabel}` : '';
+            return `Lauréat d'Impact ${badge.level}${yearsPart}`;
+        }
+
         function getCompanyWebsite(company) {
             const website = (company?.website || '').trim();
             return website;
@@ -1218,7 +1248,7 @@
                     <div class="drawer-badges" aria-label="Badges Impact 40/120">
                         <div class="drawer-badge">
                             <img src="${badge.src}" alt="Lauréat Impact ${badge.level}" onerror="this.style.display='none';" />
-                            ${badge.yearsLabel ? `<div class="drawer-badge-years">${badge.yearsLabel}</div>` : ''}
+                            <a href="https://www.impactfrance.eco/impact40" target="_blank" rel="noopener noreferrer" class="impact-laureat-info-link">${getImpactLaureatLinkLabel(badge)}</a>
                         </div>
                     </div>
                 ` : ''}
