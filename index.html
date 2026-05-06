@@ -897,7 +897,7 @@
         <div id="loading">
             <div class="loading-spinner" aria-hidden="true"></div>
             <div class="loading-text">Vérification de l’accès…</div>
-            <div class="loading-subtext">Merci de patienter, on sécurise l’accès à l’annuaire.</div>
+            <div class="loading-subtext">Merci de patienter.</div>
         </div>
     <div id="company-directory"></div>
         
@@ -1730,7 +1730,7 @@
                     return;
                 }
 
-                showLoading('Vérification de l’accès…', 'Merci de patienter, on sécurise l’accès à l’annuaire.');
+                showLoading('Vérification de l’accès…', 'Merci de patienter.');
 
                 // D'abord, récupérer toutes les entreprises pour peupler les filtres
                 const response = await authFetch('/.netlify/functions/get-companies?limit=5000');
