@@ -380,7 +380,7 @@
         .member-card {
             background: white;
             border-radius: 16px;
-            padding: 1.2rem;
+            padding: 0;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -408,9 +408,8 @@
 
         .impact-badges-container {
             position: absolute;
-            top: 50%;
+            top: 1rem;
             right: 1rem;
-            transform: translateY(-50%);
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -437,14 +436,159 @@
             line-height: 1.2;
         }
 
-        .member-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, #325F83, #020268);
+        .member-card-top {
+            padding: 1rem 1.2rem 1.1rem;
+            background: linear-gradient(180deg, #f1f5f9 0%, #ffffff 88%);
+            border-top: 4px solid transparent;
+            border-image: linear-gradient(135deg, #325F83, #020268) 1;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .member-card-header {
+            margin: 0;
+        }
+
+        .member-card:has(.impact-badges-container) .member-card-header {
+            padding-right: 6.5rem;
+        }
+
+        .member-card-identity {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .member-card-name {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #1a365d;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .company-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.08);
+            flex-shrink: 0;
+        }
+
+        .company-logo.is-hidden {
+            display: none;
+        }
+
+        .member-card-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #325F83, #3182ce);
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.12);
+        }
+
+        .member-card-avatar.is-hidden {
+            display: none;
+        }
+
+        .member-card-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.85rem;
+        }
+
+        @media (max-width: 420px) {
+            .member-card-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .member-card-chip {
+            display: flex;
+            flex-direction: column;
+            gap: 0.12rem;
+            padding: 0.5rem 0.65rem;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            min-width: 0;
+        }
+
+        .member-card-chip-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #718096;
+        }
+
+        .member-card-chip-value {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #2d3748;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .member-card-site {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.15rem;
+            padding: 0.45rem 0.55rem;
+            border-radius: 8px;
+            color: #718096;
+            font-size: 0.82rem;
+            text-decoration: none;
+            min-width: 0;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid transparent;
+            transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .member-card-site:hover,
+        .member-card-site:focus-visible {
+            color: #2b6cb0;
+            border-color: #bee3f8;
+            background: #fff;
+        }
+
+        .member-card-site-label {
+            flex-shrink: 0;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .member-card-site-url {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .member-card-site::after {
+            content: '↗';
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            color: #3182ce;
         }
 
         .member-card:hover {
@@ -458,8 +602,8 @@
             align-items: center;
             justify-content: space-between;
             gap: 0.5rem;
-            margin-top: 0.25rem;
-            padding-top: 0.85rem;
+            margin-top: 0;
+            padding: 0.85rem 1.2rem 1.15rem;
             border-top: 1px solid #e2e8f0;
         }
 
@@ -475,76 +619,6 @@
             color: #3182ce;
             line-height: 1;
         }
-
-        .member-card-website-link {
-            color: #718096;
-            font-size: 0.82rem;
-            text-decoration: none;
-            word-break: break-all;
-        }
-
-        .member-card-website-link:hover,
-        .member-card-website-link:focus-visible {
-            color: #2b6cb0;
-            text-decoration: underline;
-        }
-
-        .member-card-website-link::after {
-            content: ' ↗';
-            font-size: 0.75rem;
-        }
-
-        .member-card h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1a365d;
-            margin-bottom: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .company-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            object-fit: contain;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            flex-shrink: 0;
-        }
-
-
-        .member-card h3::before {
-            content: '';
-            margin-right: 0;
-            font-size: 1.1rem;
-        }
-
-        .member-card p {
-            margin: 0.6rem 0;
-            color: #4a5568;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .member-card p strong {
-            color: #2d3748;
-            font-weight: 500;
-            min-width: 120px;
-            display: inline-block;
-        }
-
-        .member-card p::before {
-            margin-right: 0;
-            font-size: 0.9rem;
-        }
-
-        .member-card p:nth-of-type(1)::before { content: ''; }
-        .member-card p:nth-of-type(2)::before { content: ''; }
-        .member-card p:nth-of-type(3)::before { content: ''; }
-
 
         .stats {
             display: flex;
@@ -1567,6 +1641,47 @@
             }, 3500);
         }
 
+        function escapeHtml(text) {
+            return String(text ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function getCompanyInitials(name) {
+            const cleaned = String(name || '')
+                .replace(/[^a-zA-Z0-9À-ÿ\s]/g, ' ')
+                .trim();
+            const words = cleaned.split(/\s+/).filter(Boolean);
+            if (words.length >= 2) {
+                return (words[0][0] + words[1][0]).toUpperCase();
+            }
+            return (cleaned.slice(0, 2) || '?').toUpperCase();
+        }
+
+        function formatWebsiteDisplay(url) {
+            const raw = String(url || '').trim();
+            if (!raw) return '';
+            try {
+                const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                const hostname = new URL(normalized).hostname.replace(/^www\./i, '');
+                return hostname || raw;
+            } catch {
+                return raw.length > 42 ? `${raw.slice(0, 39)}…` : raw;
+            }
+        }
+
+        function buildCompanyAvatarHtml(logoUrl, isLinkedIn, name) {
+            const initials = escapeHtml(getCompanyInitials(name));
+            const fallback = `<span class="member-card-avatar is-hidden" aria-hidden="true">${initials}</span>`;
+            if (logoUrl && !isLinkedIn) {
+                const safeLogo = escapeHtml(logoUrl);
+                return `<img src="${safeLogo}" alt="" class="company-logo" onerror="this.classList.add('is-hidden');this.nextElementSibling?.classList.remove('is-hidden');">${fallback}`;
+            }
+            return `<span class="member-card-avatar" aria-hidden="true">${initials}</span>`;
+        }
+
         function displayCompanies(companies, paginationData) {
             dismissDirectoryCoachmark();
             directoryContainer.innerHTML = '';
@@ -1616,11 +1731,14 @@
                     <img src="${macaronPath}" alt="Impact Score ${impactScore}" class="impact-score-macaron" onerror="this.style.display='none';">
                 ` : '';
 
-                // Créer le logo seulement si disponible et si ce n'est pas LinkedIn
                 const isLinkedIn = website && website.toLowerCase().includes('linkedin.com');
-                const logoElement = (logoUrl && !isLinkedIn) ? 
-                    `<img src="${logoUrl}" alt="Logo ${name}" class="company-logo" onerror="this.style.display='none';">` : '';
-                
+                const safeName = escapeHtml(name);
+                const safeSecteur = escapeHtml(secteur);
+                const safeRegion = escapeHtml(region);
+                const safeWebsite = escapeHtml(website);
+                const websiteDisplay = formatWebsiteDisplay(website);
+                const avatarHtml = buildCompanyAvatarHtml(logoUrl, isLinkedIn, name);
+
                 card.innerHTML = `
                     ${(badge && badge.src) || impactScoreMacaron ? `
                         <div class="impact-badges-container" aria-label="Badges">
@@ -1633,10 +1751,30 @@
                             ${impactScoreMacaron}
                         </div>
                     ` : ''}
-                    <h3>${logoElement}${name}</h3>
-                    <p><strong>Secteur :</strong> ${secteur}</p>
-                    <p><strong>Région :</strong> ${region}</p>
-                    ${website ? `<p><strong>Site web :</strong> <a class="member-card-website-link" href="${website}" target="_blank" rel="noopener noreferrer">${website}</a></p>` : ''}
+                    <div class="member-card-top">
+                        <header class="member-card-header">
+                            <div class="member-card-identity">
+                                ${avatarHtml}
+                                <h3 class="member-card-name">${safeName}</h3>
+                            </div>
+                        </header>
+                        <div class="member-card-meta">
+                            <span class="member-card-chip member-card-chip--secteur" aria-label="Secteur : ${safeSecteur}">
+                                <span class="member-card-chip-label">Secteur</span>
+                                <span class="member-card-chip-value">${safeSecteur}</span>
+                            </span>
+                            <span class="member-card-chip member-card-chip--region" aria-label="Région : ${safeRegion}">
+                                <span class="member-card-chip-label">Région</span>
+                                <span class="member-card-chip-value">${safeRegion}</span>
+                            </span>
+                            ${website ? `
+                                <a class="member-card-site" href="${safeWebsite}" target="_blank" rel="noopener noreferrer" title="${safeWebsite}">
+                                    <span class="member-card-site-label">Site web</span>
+                                    <span class="member-card-site-url">${escapeHtml(websiteDisplay)}</span>
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
                     <div class="member-card-footer">
                         <span class="member-card-cta">Voir les contacts</span>
                         <span class="member-card-cta-icon" aria-hidden="true">→</span>
