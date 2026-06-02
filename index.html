@@ -453,19 +453,6 @@
             border-color: #90cdf4;
         }
 
-        .member-card-signal {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            margin: 0.35rem 0 0.75rem;
-            padding: 0.25rem 0.55rem;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #2b6cb0;
-            background: rgba(49, 130, 206, 0.08);
-            border-radius: 999px;
-        }
-
         .member-card-footer {
             display: flex;
             align-items: center;
@@ -1650,7 +1637,6 @@
                     <p><strong>Secteur :</strong> ${secteur}</p>
                     <p><strong>Région :</strong> ${region}</p>
                     ${website ? `<p><strong>Site web :</strong> <a class="member-card-website-link" href="${website}" target="_blank" rel="noopener noreferrer">${website}</a></p>` : ''}
-                    <p class="member-card-signal" aria-hidden="true">Contacts adhérents disponibles</p>
                     <div class="member-card-footer">
                         <span class="member-card-cta">Voir les contacts</span>
                         <span class="member-card-cta-icon" aria-hidden="true">→</span>
