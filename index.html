@@ -958,6 +958,11 @@
             color: #4a5568;
             font-size: 0.9rem;
             margin-bottom: 0.75rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            overflow-wrap: anywhere;
         }
 
         .form-container {
@@ -1369,23 +1374,110 @@
             }
         }
 
-        function normalizeInclusiveWriting(text) {
-            if (!text) return '';
-            return text
-                .replace(/·rice/g, '')
-                .replace(/rice/g, '')
-                .replace(/·euse/g, '')
-                .replace(/euse/g, '')
-                .replace(/·trice/g, '')
-                .replace(/trice/g, '')
-                .replace(/·e/g, '')
-                .replace(/\.e/g, '')
-                .replace(/\(e\)/g, '')
-                .replace(/\/e/g, '')
+        // Poste affiché sur les cartes contact.
+        // Ordre de priorité : Job title libre > Fonction > catégorie recopiée dans le Job title.
+        // Libellés de catégories : modifier la colonne de droite pour changer le texte affiché
+        // (null = ne rien afficher, ex. « Autre »).
+        const ROLE_CATEGORY_LABELS = {
+            // Valeurs internes de la propriété « Fonction » (intitule_de_poste___standardise)
+            'Dirigeant.e': 'Dirigeant',
+            'Direction générale': 'Direction générale',
+            'Salarié': 'Salarié',
+            'Consultant et conseil en entreprise': 'Consultant et conseil en entreprise',
+            'Porteur de projet': 'Porteur de projet',
+            'Autre': null,
+            'Directeur·rice / Responsable Administratif & Financier': 'Directeur / Responsable Administratif & Financier',
+            'Directeur·rice / Responsable Marketing/Communication': 'Directeur / Responsable Marketing / Communication',
+            'Directeur·rice / Responsable RSE': 'Directeur / Responsable RSE',
+            'Respo Développement': 'Responsable Développement',
+            'Directeur·rice / Responsable Plaidoyer': 'Directeur / Responsable Plaidoyer',
+            'Directeur·ice régional·e': 'Directeur régional',
+            "Direction d'un service": "Direction d'un service",
+            'Freelance': 'Freelance',
+            'Journaliste': 'Journaliste',
+            'Avocat': 'Avocat',
+            // Catégories de formulaires recopiées dans le Job title
+            'Dirigeant·e': 'Dirigeant',
+            'Direction': 'Direction',
+            'Salari': 'Salarié',
+            'Directeur·rice régionale': 'Directeur régional',
+            'Directeur·rice régional·e': 'Directeur régional',
+            'Respo Admin & Finance': 'Directeur / Responsable Administratif & Financier',
+            'Respo Market/Com': 'Directeur / Responsable Marketing / Communication',
+            'Respo RSE': 'Directeur / Responsable RSE',
+            'Respo Plaidoyer': 'Directeur / Responsable Plaidoyer',
+            'RSE / Qualité': 'RSE / Qualité',
+            'Administratif / Comptabilité': 'Administratif / Comptabilité',
+            'Communication / Marketing': 'Communication / Marketing',
+            'Commercial / Achats': 'Commercial / Achats',
+            'Technique / IT': 'Technique / IT',
+            'Ressources humaines': 'Ressources humaines',
+            'Finance': 'Finance',
+            'Droit': 'Droit',
+            'Logistique': 'Logistique',
+            // Codes techniques de formulaires
+            'entrepreneuretoudirigeantdentrepriseoudorganisation': 'Dirigeant',
+            'c-leveldirigeantdgadafdrhetc': 'Dirigeant',
+        };
+
+        const ROLE_ACRONYMS = new Set([
+            'ceo', 'cto', 'coo', 'cfo', 'cmo', 'cio', 'cso', 'cpo', 'cco', 'dg', 'dga', 'pdg', 'daf', 'drh',
+            'rh', 'rse', 'csr', 'esg', 'it', 'rp', 'b2b', 'b2c', 'ess', 'ong', 'pme', 'tpe', 'eti',
+        ]);
+
+        function decodeHtmlEntities(text) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = String(text ?? '');
+            return textarea.value;
+        }
+
+        // Clé de comparaison : insensible à la casse, aux accents, aux espaces
+        // et à la variante du point médian (· ou .).
+        function roleKey(text) {
+            return String(text ?? '')
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .toLowerCase()
+                .replace(/(\p{L})[.•∙‧](?=\p{L})/gu, '$1·')
+                .replace(/\s*\/\s*/g, '/')
                 .replace(/\s+/g, ' ')
-                .replace(/\s*\/\s*/g, ' / ')
-                .replace(/\s*·\s*/g, '')
                 .trim();
+        }
+
+        const ROLE_CATEGORY_BY_KEY = new Map(
+            Object.entries(ROLE_CATEGORY_LABELS).map(([value, label]) => [roleKey(value), label])
+        );
+
+        function cleanRoleText(text) {
+            return decodeHtmlEntities(text).replace(/\s+/g, ' ').trim();
+        }
+
+        // Respecte la casse saisie, sauf si tout est en minuscules :
+        // majuscule initiale et sigles en capitales (« co-founder & ceo » → « Co-founder & CEO »).
+        function formatFreeJobTitle(text) {
+            if (text !== text.toLowerCase()) return text;
+            const withAcronyms = text.replace(/[\p{L}\p{N}]+/gu, (word) => (
+                ROLE_ACRONYMS.has(word) ? word.toUpperCase() : word
+            ));
+            return withAcronyms.charAt(0).toUpperCase() + withAcronyms.slice(1);
+        }
+
+        function getContactRole(contact) {
+            const jobTitle = cleanRoleText(contact?.jobtitle);
+            const jobTitleKey = roleKey(jobTitle);
+            const isJobTitleCategory = ROLE_CATEGORY_BY_KEY.has(jobTitleKey);
+
+            if (jobTitle && !isJobTitleCategory) return formatFreeJobTitle(jobTitle);
+
+            const fonction = cleanRoleText(contact?.intitule_de_poste___standardise);
+            if (fonction) {
+                const fonctionKey = roleKey(fonction);
+                const fonctionLabel = ROLE_CATEGORY_BY_KEY.has(fonctionKey) ? ROLE_CATEGORY_BY_KEY.get(fonctionKey) : fonction;
+                if (fonctionLabel) return fonctionLabel;
+            }
+
+            if (isJobTitleCategory) return ROLE_CATEGORY_BY_KEY.get(jobTitleKey) || '';
+            return '';
         }
 
         function isVipCompany(company) {
@@ -1547,17 +1639,25 @@
                 const item = document.createElement('div');
                 item.className = 'contact-item';
 
-                const fullName = `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'Contact';
-                const role = normalizeInclusiveWriting(contact.intitule_de_poste___standardise || '') || 'Intitulé de poste non renseigné';
+                const fullName = cleanRoleText(`${contact.firstname || ''} ${contact.lastname || ''}`) || 'Contact';
+                const role = getContactRole(contact) || 'Intitulé de poste non renseigné';
 
-                item.innerHTML = `
-                    <div class="contact-name">${fullName}</div>
-                    <div class="contact-role">${role}</div>
-                    <button class="primary-button">Contacter</button>
-                `;
+                // textContent : nom et poste sont du texte libre saisi dans HubSpot, jamais interprété comme du HTML.
+                const nameEl = document.createElement('div');
+                nameEl.className = 'contact-name';
+                nameEl.textContent = fullName;
 
-                const btn = item.querySelector('button');
+                const roleEl = document.createElement('div');
+                roleEl.className = 'contact-role';
+                roleEl.textContent = role;
+                roleEl.title = role;
+
+                const btn = document.createElement('button');
+                btn.className = 'primary-button';
+                btn.textContent = 'Contacter';
                 btn.addEventListener('click', () => openContactForm(contact));
+
+                item.append(nameEl, roleEl, btn);
 
                 fragment.appendChild(item);
             });

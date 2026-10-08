@@ -104,7 +104,7 @@ export default async (request) => {
 
   const hubspotClient = new Client({ accessToken: HUBSPOT_ACCESS_TOKEN });
 
-  const contactProperties = ['firstname', 'lastname', 'intitule_de_poste___standardise'];
+  const contactProperties = ['firstname', 'lastname', 'jobtitle', 'intitule_de_poste___standardise'];
   const HUBSPOT_CONTACT_LIST_ID = Netlify.env.get('HUBSPOT_CONTACT_LIST_ID') || '633';
 
   try {
